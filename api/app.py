@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from pytubefix import YouTube
 from moviepy.editor import VideoFileClip, AudioFileClip
 import re
@@ -43,7 +43,7 @@ def download():
         yt = YouTube(url)
         video_title = yt.title
         safe_title = "".join([c if c.isalnum() else "_" for c in video_title])  # Make the title filename-safe
-        
+
         if format == 'mp3':
             audio_stream = yt.streams.filter(adaptive=True, file_extension='mp4', only_audio=True).first()
             audio_path = audio_stream.download(output_path=downloads_path, filename=f'{safe_title}.mp4')
@@ -51,26 +51,32 @@ def download():
             audio_clip = AudioFileClip(audio_path)
             audio_clip.write_audiofile(os.path.join(downloads_path, f'{safe_title}.mp3'))
             os.remove(audio_path)
+            download_filename = f'{safe_title}.mp3'
         else:
             video_stream = yt.streams.filter(adaptive=True, file_extension='mp4', only_video=True, resolution=resolution).first()
             video_path = video_stream.download(output_path=downloads_path, filename=f'{safe_title}_video.mp4')
             audio_stream = yt.streams.filter(adaptive=True, file_extension='mp4', only_audio=True).first()
             audio_path = audio_stream.download(output_path=downloads_path, filename=f'{safe_title}_audio.mp4')
-            
+
             # Merge video and audio using moviepy
             video_clip = VideoFileClip(video_path)
             audio_clip = AudioFileClip(audio_path)
             final_clip = video_clip.set_audio(audio_clip)
             output_path = os.path.join(downloads_path, f'{safe_title}.mp4')
             final_clip.write_videofile(output_path, codec='libx264')
-            
+
             # Delete the separate video and audio files
             os.remove(video_path)
             os.remove(audio_path)
+            download_filename = f'{safe_title}.mp4'
 
-        return redirect(url_for('index', success=True))
+        return redirect(url_for('download_file', filename=download_filename))
     except Exception as e:
         return redirect(url_for('index', error=str(e)))
+
+@app.route('/downloads/<filename>')
+def download_file(filename):
+    return send_from_directory(downloads_path, filename, as_attachment=True)
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0')
