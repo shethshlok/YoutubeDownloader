@@ -4,7 +4,9 @@
     {
       "src": "app.py",
       "use": "@vercel/python",
-      "config": { "maxLambdaSize": "50mb" }
+      "config": {
+        "maxLambdaSize": "150mb"
+      }
     }
   ],
   "routes": [
@@ -15,5 +17,13 @@
   ],
   "env": {
     "PYTHON_VERSION": "3.9"
+  },
+  "build": {
+    "env": {
+      "FFMPEG_DIR": ".ffmpeg"
+    },
+    "scripts": {
+      "build": "sh install_ffmpeg.sh"
+    }
   }
 }

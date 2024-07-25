@@ -1,10 +1,13 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for
 from pytubefix import YouTube
 from moviepy.editor import VideoFileClip, AudioFileClip
 import re
-import os
 
 app = Flask(__name__)
+
+# Set the IMAGEIO_FFMPEG_EXE environment variable to the path of the ffmpeg binary
+os.environ["IMAGEIO_FFMPEG_EXE"] = "/.ffmpeg/ffmpeg"
 
 # Regex pattern for validating YouTube URLs
 youtube_regex = re.compile(r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/.+')
