@@ -18,7 +18,7 @@
     <div class="container">
         <h1>YouTube Downloader</h1>
         {% if request.args.get('success') %}
-            <p class="success">Download successful! <a href="{{ url_for('download_file', filename=request.args.get('success')) }}">Click here to download</a></p>
+            <p class="success">Download successful! The file is saved in the Downloads directory.</p>
         {% elif request.args.get('error') %}
             <p class="error">Error: {{ request.args.get('error') }}</p>
         {% endif %}
