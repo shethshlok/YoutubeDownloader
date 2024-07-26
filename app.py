@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, send_file
 from pytubefix import YouTube
 from moviepy.editor import VideoFileClip, AudioFileClip
+from io import BytesIO
 import re
-import os
 
 app = Flask(__name__)
 
@@ -11,9 +11,6 @@ app.debug = True
 
 # Regex pattern for validating YouTube URLs
 youtube_regex = re.compile(r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/.+')
-
-# Path to the Downloads directory
-downloads_path = '/tmp'
 
 @app.route('/')
 def index():
@@ -52,30 +49,27 @@ def download():
 
         if format == 'mp3':
             audio_stream = yt.streams.filter(adaptive=True, file_extension='mp4', only_audio=True).first()
-            audio_path = audio_stream.download(output_path=downloads_path, filename=f'{safe_title}.mp4')
-            # Convert to mp3 using moviepy
-            audio_clip = AudioFileClip(audio_path)
-            audio_clip.write_audiofile(os.path.join(downloads_path, f'{safe_title}.mp3'))
-            os.remove(audio_path)
-            return send_file(os.path.join(downloads_path, f'{safe_title}.mp3'), as_attachment=True)
+            audio_data = audio_stream.stream_to_buffer()
+            audio_clip = AudioFileClip(BytesIO(audio_data))
+            audio_buffer = BytesIO()
+            audio_clip.write_audiofile(audio_buffer, format='mp3')
+            audio_buffer.seek(0)
+            return send_file(audio_buffer, as_attachment=True, download_name=f'{safe_title}.mp3')
         else:
             video_stream = yt.streams.filter(adaptive=True, file_extension='mp4', only_video=True, resolution=resolution).first()
-            video_path = video_stream.download(output_path=downloads_path, filename=f'{safe_title}_video.mp4')
+            video_data = video_stream.stream_to_buffer()
+            video_clip = VideoFileClip(BytesIO(video_data))
+
             audio_stream = yt.streams.filter(adaptive=True, file_extension='mp4', only_audio=True).first()
-            audio_path = audio_stream.download(output_path=downloads_path, filename=f'{safe_title}_audio.mp4')
+            audio_data = audio_stream.stream_to_buffer()
+            audio_clip = AudioFileClip(BytesIO(audio_data))
 
-            # Merge video and audio using moviepy
-            video_clip = VideoFileClip(video_path)
-            audio_clip = AudioFileClip(audio_path)
             final_clip = video_clip.set_audio(audio_clip)
-            output_path = os.path.join(downloads_path, f'{safe_title}.mp4')
-            final_clip.write_videofile(output_path, codec='libx264')
-
-            # Delete the separate video and audio files
-            os.remove(video_path)
-            os.remove(audio_path)
-
-            return send_file(output_path, as_attachment=True)
+            output_buffer = BytesIO()
+            final_clip.write_videofile(output_buffer, codec='libx264')
+            output_buffer.seek(0)
+            
+            return send_file(output_buffer, as_attachment=True, download_name=f'{safe_title}.mp4')
     except Exception as e:
         app.logger.error(f"Error during download: {e}")
         return redirect(url_for('index', error=str(e)))
