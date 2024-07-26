@@ -3,6 +3,7 @@ from pytubefix import YouTube
 from moviepy.editor import VideoFileClip, AudioFileClip
 from io import BytesIO
 import re
+import tempfile
 
 app = Flask(__name__)
 
@@ -49,33 +50,31 @@ def download():
 
         if format == 'mp3':
             audio_stream = yt.streams.filter(adaptive=True, file_extension='mp4', only_audio=True).first()
-            audio_buffer = BytesIO()
-            audio_stream.stream_to_buffer(audio_buffer)
-            audio_buffer.seek(0)
-            audio_clip = AudioFileClip(audio_buffer)
-            mp3_buffer = BytesIO()
-            audio_clip.write_audiofile(mp3_buffer, format='mp3')
-            mp3_buffer.seek(0)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_audio:
+                audio_stream.download(output_path=temp_audio.name)
+                temp_audio.seek(0)
+                audio_clip = AudioFileClip(temp_audio.name)
+                mp3_buffer = BytesIO()
+                audio_clip.write_audiofile(mp3_buffer, format='mp3')
+                mp3_buffer.seek(0)
             return send_file(mp3_buffer, as_attachment=True, download_name=f'{safe_title}.mp3')
         else:
-            video_stream = yt.streams.filter(adaptive=True, file_extension='mp4', only_video=True, resolution=resolution).first()
-            video_buffer = BytesIO()
-            video_stream.stream_to_buffer(video_buffer)
-            video_buffer.seek(0)
-            video_clip = VideoFileClip(video_buffer)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
+                video_stream = yt.streams.filter(adaptive=True, file_extension='mp4', only_video=True, resolution=resolution).first()
+                video_stream.download(output_path=temp_video.name)
+                video_clip = VideoFileClip(temp_video.name)
 
-            audio_stream = yt.streams.filter(adaptive=True, file_extension='mp4', only_audio=True).first()
-            audio_buffer = BytesIO()
-            audio_stream.stream_to_buffer(audio_buffer)
-            audio_buffer.seek(0)
-            audio_clip = AudioFileClip(audio_buffer)
+                audio_stream = yt.streams.filter(adaptive=True, file_extension='mp4', only_audio=True).first()
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_audio:
+                    audio_stream.download(output_path=temp_audio.name)
+                    audio_clip = AudioFileClip(temp_audio.name)
 
-            final_clip = video_clip.set_audio(audio_clip)
-            output_buffer = BytesIO()
-            final_clip.write_videofile(output_buffer, codec='libx264')
-            output_buffer.seek(0)
-            
-            return send_file(output_buffer, as_attachment=True, download_name=f'{safe_title}.mp4')
+                    final_clip = video_clip.set_audio(audio_clip)
+                    output_buffer = BytesIO()
+                    final_clip.write_videofile(output_buffer, codec='libx264')
+                    output_buffer.seek(0)
+                
+                return send_file(output_buffer, as_attachment=True, download_name=f'{safe_title}.mp4')
     except Exception as e:
         app.logger.error(f"Error during download: {e}")
         return redirect(url_for('index', error=str(e)))
