@@ -1,10 +1,13 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, send_file
 from pytubefix import YouTube
 from moviepy.editor import VideoFileClip, AudioFileClip
 import re
 import os
 
 app = Flask(__name__)
+
+# Enable debug mode
+app.debug = True
 
 # Regex pattern for validating YouTube URLs
 youtube_regex = re.compile(r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/.+')
@@ -20,6 +23,7 @@ def index():
 def fetch_resolutions():
     url = request.form['url']
     if not youtube_regex.match(url):
+        app.logger.error(f"Invalid YouTube URL: {url}")
         return redirect(url_for('index', error="Invalid YouTube URL"))
 
     try:
@@ -29,6 +33,7 @@ def fetch_resolutions():
         resolutions.sort(key=lambda x: int(x[:-1]), reverse=True)
         return render_template('index.html', url=url, resolutions=resolutions)
     except Exception as e:
+        app.logger.error(f"Error fetching resolutions: {e}")
         return redirect(url_for('index', error=str(e)))
 
 @app.route('/download', methods=['POST'])
@@ -37,6 +42,7 @@ def download():
     resolution = request.form['resolution']
     format = request.form['format']
     if not youtube_regex.match(url):
+        app.logger.error(f"Invalid YouTube URL: {url}")
         return redirect(url_for('index', error="Invalid YouTube URL"))
 
     try:
@@ -71,7 +77,8 @@ def download():
 
             return send_file(output_path, as_attachment=True)
     except Exception as e:
+        app.logger.error(f"Error during download: {e}")
         return redirect(url_for('index', error=str(e)))
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
