@@ -1,46 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Downloader</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        .container { max-width: 500px; margin: 50px auto; text-align: center; }
-        input[type="text"], select { width: 100%; padding: 10px; margin: 10px 0; }
-        button { padding: 10px 20px; }
-        .error { color: red; }
-        .success { color: green; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
+
 <body>
     <div class="container">
         <h1>YouTube Downloader</h1>
-        {% if request.args.get('success') %}
-            <p class="success">Download successful! The file is saved in the Downloads directory.</p>
-        {% elif request.args.get('error') %}
+        {% if request.args.get('error') %}
             <p class="error">Error: {{ request.args.get('error') }}</p>
         {% endif %}
-        {% if not resolutions %}
-            <form action="/fetch_resolutions" method="post">
-                <input type="text" name="url" placeholder="Enter YouTube URL" required>
-                <button type="submit">Fetch Resolutions</button>
-            </form>
-        {% else %}
-            <form action="/download" method="post">
-                <input type="hidden" name="url" value="{{ url }}">
-                <select name="resolution" required>
-                    {% for resolution in resolutions %}
-                        <option value="{{ resolution }}">{{ resolution }}</option>
-                    {% endfor %}
-                </select>
-                <select name="format" required>
-                    <option value="mp4">MP4</option>
-                    <option value="mp3">MP3</option>
-                </select>
-                <button type="submit">Download</button>
-            </form>
-        {% endif %}
+        <form action="/download" method="post">
+            <input type="text" name="url" placeholder="Enter YouTube URL" required>
+            <select name="format" required>
+                <option value="mp4">MP4</option>
+                <option value="mp3">MP3</option>
+            </select>
+            <button type="submit">Download</button>
+        </form>
     </div>
 </body>
+
 </html>
