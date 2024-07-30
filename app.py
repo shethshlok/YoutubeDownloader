@@ -1,9 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file, after_this_request
+from flask import Flask, render_template, request, redirect, url_for
 from pytubefix import YouTube
 import re
-import os
-import requests
-from io import BytesIO
 
 app = Flask(__name__)
 
@@ -29,15 +26,11 @@ def download():
         if format == 'mp3':
             audio_stream = yt.streams.filter(only_audio=True).first()
             download_url = audio_stream.url
-            response = requests.get(download_url, stream=True)
-            file_data = BytesIO(response.content)
-            return send_file(file_data, as_attachment=True, download_name=f"{safe_title}.mp3")
         else:
             video_stream = yt.streams.filter(progressive=True, file_extension='mp4').first()
             download_url = video_stream.url
-            response = requests.get(download_url, stream=True)
-            file_data = BytesIO(response.content)
-            return send_file(file_data, as_attachment=True, download_name=f"{safe_title}.mp4")
+
+        return redirect(download_url)
     except Exception as e:
         return redirect(url_for('index', error=str(e)))
 

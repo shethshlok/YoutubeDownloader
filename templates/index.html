@@ -11,12 +11,15 @@
 <body>
     <div class="container">
         <h1>YouTube Downloader</h1>
+        <p>Easily download your favorite YouTube videos in MP4 or MP3 format.</p>
         {% if request.args.get('error') %}
             <p class="error">Error: {{ request.args.get('error') }}</p>
         {% endif %}
         <form action="/download" method="post">
-            <input type="text" name="url" placeholder="Enter YouTube URL" required>
-            <select name="format" required>
+            <label for="url">Video URL</label>
+            <input type="text" id="url" name="url" placeholder="Paste the YouTube video link" required>
+            <label for="format">File Format</label>
+            <select id="format" name="format" required>
                 <option value="mp4">MP4</option>
                 <option value="mp3">MP3</option>
             </select>
