@@ -7,12 +7,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Video</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script>
+        function redirectToHome() {
+            window.location.href = "/";
+        }
+    </script>
 </head>
 
 <body>
     <div class="container">
         <h1>{{ title }}</h1>
         <iframe width="560" height="315" src="{{ video_url }}" frameborder="0" allowfullscreen></iframe>
+        <button type="submit" onclick="redirectToHome()">Home</button>
     </div>
 </body>
 
