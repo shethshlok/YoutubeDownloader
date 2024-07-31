@@ -1,9 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file
+from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify
 from pytubefix import YouTube
 import re
-import os
 import requests
-from tempfile import NamedTemporaryFile
+from io import BytesIO
 
 app = Flask(__name__)
 
@@ -14,12 +13,14 @@ youtube_regex = re.compile(r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie
 def index():
     return render_template('index.html')
 
-@app.route('/download', methods=['POST'])
+@app.route('/api/download', methods=['POST'])
 def download():
-    url = request.form['url']
-    file_format = request.form['format']
+    data = request.get_json()
+    url = data.get('url')
+    file_format = data.get('format')
+
     if not youtube_regex.match(url):
-        return redirect(url_for('index', error="Invalid YouTube URL"))
+        return jsonify({'error': 'Invalid YouTube URL'}), 400
 
     try:
         yt = YouTube(url)
@@ -31,17 +32,25 @@ def download():
         else:
             stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
 
-        # Download the video to a temporary file
-        temp_file = NamedTemporaryFile(delete=False)
-        response = requests.get(stream.url, stream=True)
-        with open(temp_file.name, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-
-        # Send the file to the user
-        return send_file(temp_file.name, as_attachment=True, download_name=f"{safe_title}.{file_format}")
+        download_url = stream.url
+        return jsonify({'download_url': download_url, 'filename': f"{safe_title}.{file_format}"})
     except Exception as e:
-        return redirect(url_for('index', error=str(e)))
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/proxy_download')
+def proxy_download():
+    download_url = request.args.get('download_url')
+    filename = request.args.get('filename')
+
+    response = requests.get(download_url, stream=True)
+    response.raise_for_status()
+
+    return send_file(
+        BytesIO(response.content),
+        as_attachment=True,
+        download_name=filename,
+        mimetype='video/mp4'
+    )
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0')

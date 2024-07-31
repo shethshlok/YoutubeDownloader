@@ -15,7 +15,7 @@
         {% if request.args.get('error') %}
             <p class="error">Error: {{ request.args.get('error') }}</p>
         {% endif %}
-        <form action="/download" method="post">
+        <form id="downloadForm">
             <label for="url">Video URL</label>
             <input type="text" id="url" name="url" placeholder="Paste the YouTube video link" required>
             <label for="format">File Format</label>
@@ -26,6 +26,32 @@
             <button type="submit">Download</button>
         </form>
     </div>
+    <script>
+        document.getElementById('downloadForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const url = document.getElementById('url').value;
+            const format = document.getElementById('format').value;
+
+            try {
+                const response = await fetch('/api/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url, format })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    window.location.href = `/proxy_download?download_url=${encodeURIComponent(data.download_url)}&filename=${encodeURIComponent(data.filename)}`;
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                alert('An error occurred while processing your request.');
+            }
+        });
+    </script>
 </body>
 
 </html>
