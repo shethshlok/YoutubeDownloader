@@ -14,7 +14,7 @@ def index():
 @app.route('/download', methods=['POST'])
 def download():
     url = request.form['url']
-    format = request.form['format']
+    file_format = request.form['format']
     if not youtube_regex.match(url):
         return redirect(url_for('index', error="Invalid YouTube URL"))
 
@@ -23,14 +23,14 @@ def download():
         video_title = yt.title
         safe_title = "".join([c if c.isalnum() else "_" for c in video_title])  # Make the title filename-safe
 
-        if format == 'mp3':
+        if file_format == 'mp3':
             audio_stream = yt.streams.filter(only_audio=True).first()
             download_url = audio_stream.url
         else:
             video_stream = yt.streams.filter(progressive=True, file_extension='mp4').first()
             download_url = video_stream.url
 
-        return redirect(download_url)
+        return render_template('video.html', title=video_title, video_url=download_url, download_url=download_url, safe_title=safe_title, format=file_format)
     except Exception as e:
         return redirect(url_for('index', error=str(e)))
 
