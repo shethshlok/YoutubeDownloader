@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, send_file
-from pytube import YouTube
+from pytubefix import YouTube
 import re
 import os
 import requests
