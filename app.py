@@ -1,6 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for
-from pytubefix import YouTube
+from flask import Flask, render_template, request, redirect, url_for, send_file
+from pytube import YouTube
 import re
+import os
+import requests
+from tempfile import NamedTemporaryFile
 
 app = Flask(__name__)
 
@@ -24,13 +27,19 @@ def download():
         safe_title = "".join([c if c.isalnum() else "_" for c in video_title])  # Make the title filename-safe
 
         if file_format == 'mp3':
-            audio_stream = yt.streams.filter(only_audio=True).first()
-            download_url = audio_stream.url
+            stream = yt.streams.filter(only_audio=True).first()
         else:
-            video_stream = yt.streams.filter(progressive=True, file_extension='mp4').first()
-            download_url = video_stream.url
+            stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
 
-        return render_template('video.html', title=video_title, video_url=download_url, download_url=download_url, safe_title=safe_title, format=file_format)
+        # Download the video to a temporary file
+        temp_file = NamedTemporaryFile(delete=False)
+        response = requests.get(stream.url, stream=True)
+        with open(temp_file.name, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        # Send the file to the user
+        return send_file(temp_file.name, as_attachment=True, download_name=f"{safe_title}.{file_format}")
     except Exception as e:
         return redirect(url_for('index', error=str(e)))
 
