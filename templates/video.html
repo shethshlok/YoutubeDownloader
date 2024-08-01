@@ -1,25 +1,35 @@
-<!-- templates/video.html -->
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Video</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <script>
-        function redirectToHome() {
-            window.location.href = "/";
+    <title>Download {{ title }}</title>
+    <style>
+        .download-button {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
         }
-    </script>
+
+        .download-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
-
 <body>
-    <div class="container">
-        <h1>{{ title }}</h1>
-        <iframe width="560" height="315" src="{{ video_url }}" frameborder="0" allowfullscreen></iframe>
-        <button type="submit" onclick="redirectToHome()">Home</button>
-    </div>
+    <h1>Downloading {{ title }}</h1>
+    <p>If the download doesn't start automatically, <a class="download-button" href="/serve_video?title={{ title }}&video_url={{ video_url }}&format={{ format }}">Download</a>.</p>
+    <script>
+        window.onload = function() {
+            window.location.href = "/serve_video?title={{ title }}&video_url={{ video_url }}&format={{ format }}";
+        };
+    </script>
 </body>
-
 </html>
