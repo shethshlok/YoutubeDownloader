@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for
 from pytubefix import YouTube
 import re
 
@@ -11,13 +11,12 @@ youtube_regex = re.compile(r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie
 def index():
     return render_template('index.html')
 
-@app.route('/fetch_url', methods=['POST'])
-def fetch_url():
-    data = request.get_json()
-    url = data['url']
-    file_format = data['format']
+@app.route('/download', methods=['POST'])
+def download():
+    url = request.form['url']
+    file_format = request.form['format']
     if not youtube_regex.match(url):
-        return "Invalid YouTube URL", 400
+        return redirect(url_for('index', error="Invalid YouTube URL"))
 
     try:
         yt = YouTube(url)
@@ -31,9 +30,9 @@ def fetch_url():
             video_stream = yt.streams.filter(progressive=True, file_extension='mp4').first()
             download_url = video_stream.url
 
-        return jsonify({"download_url": download_url, "title": safe_title})
+        return render_template('video.html', title=video_title, video_url=download_url, download_url=download_url, safe_title=safe_title, format=file_format)
     except Exception as e:
-        return str(e), 500
+        return redirect(url_for('index', error=str(e)))
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0')
